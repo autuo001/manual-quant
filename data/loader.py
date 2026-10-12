@@ -196,7 +196,23 @@ def _derive_fundamentals(raw: pd.DataFrame) -> pd.DataFrame:
 
 @lru_cache(maxsize=1)
 def _fundamentals_cached() -> pd.DataFrame:
-    raw = pd.read_parquet(_cfg.YJBB_RICH, columns=_YJBB_SRC)
+    """读富字段业绩报表；缺失时退回同目录瘦字段版并打印警告（不崩，缺列由门槛报「数据不足」）。
+
+    为什么允许降级：SPEC §4 要求「缺数据只标注数据不足、不得中断」；外部用户可能只有瘦字段表，
+    此时毛利率/净利率等门槛会因缺字段而不通过并登记 missing，而不是抛异常。
+    """
+    path = _cfg.YJBB_RICH
+    if not os.path.isfile(path):
+        thin = getattr(_cfg, "YJBB_THIN", os.path.join(_cfg.DATA_DIR, "yjbb.parquet"))
+        if os.path.isfile(thin) and os.path.abspath(thin) != os.path.abspath(path):
+            print("[警告] 富字段业绩报表缺失（%s），退回瘦字段版 %s："
+                  "毛利率/净利率/ROE 等门槛将登记为缺字段" % (path, thin))
+            path = thin
+        else:
+            print("[警告] 业绩报表不可用（%s 与 %s 均不存在）：财务门槛相关规则将全部登记为「数据不足」"
+                  % (path, thin))
+    raw = pd.read_parquet(path, columns=[c for c in _YJBB_SRC if c != "每股净资产"] or None) \
+        if os.path.isfile(path) else pd.DataFrame(columns=_YJBB_SRC)
     return _derive_fundamentals(raw)
 
 

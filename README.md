@@ -26,6 +26,13 @@ export MQ_DATA_DIR=/path/to/parquet
 python3 run.py check      # 会列出哪些数据可用、哪些登记为「数据不足」
 ```
 
+**富字段业绩报表**（`yjbb.parquet`，含毛利率/净利率/ROE 等列）是价值卡的门槛来源，按以下顺序探测：
+
+1. `$MQ_YJBB_RICH` 直接指定；
+2. `<MQ_DATA_DIR>/yjbb_rich.parquet`；
+3. 原布局 `<DATA_DIR 的上两级>/backtest/data/parquet/yjbb.parquet`；
+4. 退回 `<MQ_DATA_DIR>/yjbb.parquet`（若只有瘦字段版，财务门槛会登记「缺字段」而不是报错）。
+
 数据缺失时框架**不会崩**：相关规则登记者为「数据不足」并在报告里标注。可用 akshare 自行抓取
 （腾讯／东方财富／新浪三源，注意限流）；业绩报表用 `ak.stock_yjbb_em(date=报告期)`。
 

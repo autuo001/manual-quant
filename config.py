@@ -26,7 +26,26 @@ DATA_DIR: str = os.environ.get("MQ_DATA_DIR") or str(
     (_PROJECT_DIR / "six_layer_backtest" / "data" / "parquet").resolve()
 )
 # SPEC §2：业绩报表必须用富字段版本（瘦字段缺财务字段，勿用）
-YJBB_RICH: str = str((_PROJECT_DIR / "backtest" / "data" / "parquet" / "yjbb.parquet").resolve())
+# 探测顺序（外部用户可任选一种放置方式，也可用 MQ_YJBB_RICH 直接指定）：
+#   ① $MQ_YJBB_RICH ② <DATA_DIR>/yjbb_rich.parquet ③ 原布局 <root>/backtest/data/parquet/yjbb.parquet
+#   ④ 退回 <DATA_DIR>/yjbb.parquet（瘦字段，仅登记「缺字段」不崩）
+def _find_yjbb_rich() -> str:
+    env = os.environ.get("MQ_YJBB_RICH")
+    if env:
+        return str(Path(env).expanduser().resolve())
+    data_dir = Path(DATA_DIR).resolve()
+    cands = [
+        data_dir / "yjbb_rich.parquet",
+        data_dir.parent.parent.parent / "backtest" / "data" / "parquet" / "yjbb.parquet",
+        data_dir.parent.parent / "backtest" / "data" / "parquet" / "yjbb.parquet",
+    ]
+    for c in cands:
+        if c.is_file():
+            return str(c)
+    return str(cands[1])          # 都不存在时给出原布局路径，便于报错定位
+
+
+YJBB_RICH: str = _find_yjbb_rich()
 OUT_DIR: str = os.environ.get("MQ_OUT_DIR") or str((_MQ_DIR / "output").resolve())
 
 DAILY_ALL_PARQUET: str = os.path.join(DATA_DIR, "daily_all.parquet")
