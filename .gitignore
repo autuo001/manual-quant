@@ -1,0 +1,16 @@
+# 本地提取的手册章节文本（版权考虑，不随仓库发布）
+spec/
+
+# 运行产物（可复现，不入库）
+output/
+__pycache__/
+*.py[cod]
+
+# 外部数据缓存（可重取）
+data/extra/*.parquet
+data/extra/*.meta.json
+
+# 数据目录（体积大且需自备）
+data/daily_all.parquet
+
+.DS_Store
